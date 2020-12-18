@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace sudoku {
+namespace Sudoku {
     /// <summary>
     /// Interaction logic for BoardUI.xaml
     /// </summary>
@@ -22,6 +22,7 @@ namespace sudoku {
         public BoardUI() {
             InitializeComponent();
             MainList.DataContext = gameBoard;
+            gameBoard.GenerateGame();
         }
     }
 }

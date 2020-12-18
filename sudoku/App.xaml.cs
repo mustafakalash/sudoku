@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace sudoku
+namespace Sudoku
 {
     /// <summary>
     /// Interaction logic for App.xaml

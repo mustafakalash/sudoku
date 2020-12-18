@@ -6,8 +6,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace sudoku {
+namespace Sudoku {
     public class Cell : INotifyPropertyChanged {
+        public const string READ_ONLY_EVENT = "ReadOnly";
+        public const string NUMBER_EVENT = "Number";
+        public const string IS_VALID_EVENT = "IsValid";
+
         bool readOnlyValue = false;
         public bool ReadOnly {
             get {
@@ -17,14 +21,14 @@ namespace sudoku {
                 if(readOnlyValue != value) {
                     readOnlyValue = value;
                     if(PropertyChanged != null) {
-                        PropertyChanged(this, new PropertyChangedEventArgs("ReadOnly"));
+                        PropertyChanged(this, new PropertyChangedEventArgs(READ_ONLY_EVENT));
                     }
                 }
             }
         }
 
-        byte? numberValue = null;
-        public byte? Number {
+        int? numberValue = null;
+        public int? Number {
             get {
                 return numberValue;
             }
@@ -32,7 +36,7 @@ namespace sudoku {
                 if(numberValue != value) {
                     numberValue = value;
                     if(PropertyChanged != null) {
-                        PropertyChanged(this, new PropertyChangedEventArgs("Number"));
+                        PropertyChanged(this, new PropertyChangedEventArgs(NUMBER_EVENT));
                     }
                 }
             }
@@ -48,17 +52,49 @@ namespace sudoku {
                 if(isValidValue != value) {
                     isValidValue = value;
                     if(PropertyChanged != null) {
-                        PropertyChanged(this, new PropertyChangedEventArgs("IsValid"));
+                        PropertyChanged(this, new PropertyChangedEventArgs(IS_VALID_EVENT));
                     }
                 }
             }
         }
 
-        Collection<byte> possibleValuesList = new Collection<byte> {1, 2, 3, 4, 5, 6, 7, 8, 9};
-        public Collection<byte> PossibleValues {
+        List<int> possibleValuesList;
+        public List<int> PossibleValues {
             get {
                 return possibleValuesList;
             }
+        }
+
+        public readonly int Row, Col, GridRow, GridCol;
+        public readonly Grid Grid;
+
+        public Cell(Grid grid, int row, int col) {
+            GridRow = row;
+            GridCol = col;
+            Grid = grid;
+            Row = GridRow + (Grid.Row * Grid.Board.Size);
+            Col = GridCol + (Grid.Col * Grid.Board.Size);
+
+            possibleValuesList = Enumerable.Range(1, grid.Board.TotalSize).ToList();
+        }
+
+        public HashSet<Cell> GetSibilngs() {
+            HashSet<Cell> cells = new HashSet<Cell>();
+
+            foreach(ObservableCollection<Cell> col in Grid.GridRows) {
+                foreach(Cell c in col) {
+                    cells.Add(c);
+                }
+            }
+
+            for(int i = 0; i < Grid.Board.TotalSize; i++) {
+                cells.Add(Grid.Board[i, Col]);
+                cells.Add(Grid.Board[Row, i]);
+            }
+
+            cells.Remove(this);
+
+            return cells;
         }
 
         #region INotifyPropertyChanged Members
