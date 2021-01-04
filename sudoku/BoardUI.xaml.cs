@@ -18,11 +18,11 @@ namespace Sudoku {
     /// Interaction logic for BoardUI.xaml
     /// </summary>
     public partial class BoardUI : UserControl {
-        public Board gameBoard = new Board(9);
         public BoardUI() {
+            App.GameBoard = new Board(9);
             InitializeComponent();
-            MainList.DataContext = gameBoard;
-            gameBoard.GenerateGame();
+            MainList.DataContext = App.GameBoard;
+            App.GameBoard.GenerateGame();
         }
     }
 }

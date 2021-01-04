@@ -16,6 +16,30 @@ namespace Sudoku {
         public readonly int Size;
         public readonly int TotalSize;
 
+        Cell selectedCellObject;
+        public Cell SelectedCell {
+            get {
+                return selectedCellObject;
+            }
+            set {
+                if(selectedCellObject != value) {
+                    if(selectedCellObject != null) {
+                        selectedCellObject.Selected = false;
+                        foreach(Cell c in selectedCellObject.GetSibilngs()) {
+                            c.SiblingSelected = false;
+                        }
+                    }
+                    selectedCellObject = value;
+                    if(selectedCellObject != null) {
+                        selectedCellObject.Selected = true;
+                        foreach(Cell c in selectedCellObject.GetSibilngs()) {
+                            c.SiblingSelected = true;
+                        }
+                    }
+                }
+            }
+        }
+
         public Board(int size) {
             TotalSize = size;
             Size = (int) Math.Sqrt(size);
@@ -162,7 +186,7 @@ namespace Sudoku {
                         if(cell.IsValid) {
                             if((row == 8 && col == 8) || TestBoard(rows, ref solutionCount)) {
                                 solutionCount++;
-                                break;
+                                return true;
                             }
                         }
                     }

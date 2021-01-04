@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,8 @@ namespace Sudoku {
         public const string READ_ONLY_EVENT = "ReadOnly";
         public const string NUMBER_EVENT = "Number";
         public const string IS_VALID_EVENT = "IsValid";
+        public const string SELECTED_EVENT = "Selected";
+        public const string SIBLING_SELECTED_EVENT = "SiblingSelected";
 
         bool readOnlyValue = false;
         public bool ReadOnly {
@@ -62,6 +65,43 @@ namespace Sudoku {
         public List<int> PossibleValues {
             get {
                 return possibleValuesList;
+            }
+        }
+
+        ObservableCollection<int> notesList = new ObservableCollection<int>();
+        public ObservableCollection<int> Notes {
+            get {
+                return notesList;
+            }
+        }
+
+        bool selectedValue = false;
+        public bool Selected {
+            get {
+                return selectedValue;
+            }
+            set {
+                if(selectedValue != value) {
+                    selectedValue = value;
+                    if(PropertyChanged != null) {
+                        PropertyChanged(this, new PropertyChangedEventArgs(SELECTED_EVENT));
+                    }
+                }
+            }
+        }
+
+        bool siblingSelectedValue = false;
+        public bool SiblingSelected {
+            get {
+                return siblingSelectedValue;
+            }
+            set {
+                if(siblingSelectedValue != value) {
+                    siblingSelectedValue = value;
+                    if(PropertyChanged != null) {
+                        PropertyChanged(this, new PropertyChangedEventArgs(SIBLING_SELECTED_EVENT));
+                    }
+                }
             }
         }
 
