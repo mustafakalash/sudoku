@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 
 namespace Sudoku {
-    public class Board : INotifyPropertyChanged {
+    public class Board : INotifyPropertyChanged, ICloneable {
         ObservableCollection<ObservableCollection<Grid>> rows;
         public ObservableCollection<ObservableCollection<Grid>> BoardRows {
             get {
@@ -75,9 +75,12 @@ namespace Sudoku {
         void gridPropertyChanged(object sender, PropertyChangedEventArgs e) {
             Cell cell = (Cell) sender;
             if(e.PropertyName == Cell.NUMBER_EVENT) {
-                cell.IsValid = checkIsValid(cell);
-                foreach(Cell c in cell.GetSibilngs()) {
-                    c.IsValid = checkIsValid(c);
+                bool validCheck = checkIsValid(cell);
+                if(cell.IsValid != validCheck) {
+                    cell.IsValid = validCheck;
+                    foreach(Cell c in cell.GetSibilngs()) {
+                        c.IsValid = checkIsValid(c);
+                    }
                 }
             }
         }
@@ -102,27 +105,20 @@ namespace Sudoku {
             Random random = new Random();
             int numberRemoved = 0;
             List<Cell> ineligibleCells = new List<Cell>();
-            while(numberRemoved < 40) {
+            while(numberRemoved < 35) {
                 Cell cell;
                 do {
                     cell = this[random.Next(9), random.Next(9)];
                 } while(!cell.Number.HasValue || ineligibleCells.Contains(cell));
 
-                ObservableCollection<ObservableCollection<Grid>> rowsCopy = createBoard();
-                for(int row = 0; row < TotalSize; row++) {
-                    for(int col = 0; col < TotalSize; col++) {
-                        Grid grid = rowsCopy[row / Size][col / Size];
-                        Cell c = grid.GridRows[row % Size][col % Size];
-                        c.Number = this[row, col].Number;
-                    }
-                }
-
                 int? removedNumber = cell.Number;
                 cell.Number = null;
 
+                Board boardCopy = this.Copy();
+
                 int solutionCount = 0;
-                TestBoard(rowsCopy, ref solutionCount);
-                if(solutionCount > 1) {
+                TestBoard(boardCopy, ref solutionCount);
+                if(solutionCount != 1) {
                     cell.Number = removedNumber;
                     ineligibleCells.Add(cell);
                 } else {
@@ -169,12 +165,16 @@ namespace Sudoku {
             return false;
         }
 
-        public bool TestBoard(ObservableCollection<ObservableCollection<Grid>> rows, ref int solutionCount) {
+        public void TestBoard(Board board, ref int solutionCount) {
+            if(solutionCount >= 2) {
+                return;
+            }
+
             int[] possibleValues = Enumerable.Range(1, TotalSize).ToArray();
             Random random = new Random();
             for(int row = 0; row < TotalSize; row++) {
                 for(int col = 0; col < TotalSize; col++) {
-                    Cell cell = this[row, col];
+                    Cell cell = board[row, col];
 
                     if(cell.Number.HasValue) {
                         continue;
@@ -184,19 +184,37 @@ namespace Sudoku {
                     foreach(int i in remainingValues) {
                         cell.Number = i;
                         if(cell.IsValid) {
-                            if((row == 8 && col == 8) || TestBoard(rows, ref solutionCount)) {
+                            if(row == 8 && col == 8) {
                                 solutionCount++;
-                                return true;
+                                return;
                             }
+                            Board boardCopy = board.Copy();
+                            TestBoard(boardCopy, ref solutionCount);
                         }
                     }
+                    return;
+                }
+            }
+        }
 
-                    cell.Number = null;
-                    return false;
+        public object Clone() {
+            Board copy = new Board(TotalSize);
+
+            for(int row = 0; row < TotalSize; row++) {
+                for(int col = 0; col < TotalSize; col++) {
+                    Cell cell = this[row, col];
+
+                    Cell cellCopy = copy[row, col];
+                    cellCopy.Number = cell.Number;
+                    cellCopy.ReadOnly = cell.ReadOnly;
                 }
             }
 
-            return false;
+            return copy;
+        }
+
+        public Board Copy() {
+            return (Board) Clone();
         }
 
         #region INotifyPropertyChanged Members
