@@ -1,11 +1,11 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace Sudoku {
-    public class Grid : INotifyPropertyChanged {
-        readonly ObservableCollection<ObservableCollection<Cell>> rows;
-        public ObservableCollection<ObservableCollection<Cell>> GridRows {
+    public class Grid {
+        readonly List<List<Cell>> rows;
+        public List<List<Cell>> GridRows {
             get {
                 return rows;
             }
@@ -20,24 +20,15 @@ namespace Sudoku {
             Row = row;
             Col = col;
 
-            rows = new ObservableCollection<ObservableCollection<Cell>>();
+            rows = new List<List<Cell>>();
             for(int r = 0; r < board.Size; r++) {
-                ObservableCollection<Cell> colL = new ObservableCollection<Cell>();
+                List<Cell> colL = new List<Cell>();
                 for(int c = 0; c < board.Size; c++) {
                     Cell cell = new Cell(this, r, c);
-                    cell.PropertyChanged += new PropertyChangedEventHandler(cellPropertyChanged);
                     colL.Add(cell);
                 }
                 rows.Add(colL);
             }
         }
-
-        void cellPropertyChanged(object sender, PropertyChangedEventArgs e) {
-            PropertyChanged(sender, new PropertyChangedEventArgs(e.PropertyName));
-        }
-        
-        #region INotifyPropertyChanged Members
-        public event PropertyChangedEventHandler PropertyChanged;
-        #endregion
     }
 }

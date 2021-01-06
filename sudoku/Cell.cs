@@ -61,19 +61,19 @@ namespace Sudoku {
             }
         }
 
-        List<int> possibleValuesList;
-        public List<int> PossibleValues {
-            get {
-                return possibleValuesList;
-            }
-        }
+        public readonly List<int> PossibleValues;
 
         ObservableCollection<int> notesList = new ObservableCollection<int>();
         public ObservableCollection<int> Notes {
             get {
                 return notesList;
             }
+            set {
+                notesList = value;
+            }
         }
+
+        public List<int> AutoRemovedNotes = new List<int>();
 
         bool selectedValue = false;
         public bool Selected {
@@ -114,14 +114,15 @@ namespace Sudoku {
             Grid = grid;
             Row = GridRow + (Grid.Row * Grid.Board.Size);
             Col = GridCol + (Grid.Col * Grid.Board.Size);
+            PossibleValues = Enumerable.Range(1, grid.Board.TotalSize).ToList();
 
-            possibleValuesList = Enumerable.Range(1, grid.Board.TotalSize).ToList();
+            PropertyChanged += new PropertyChangedEventHandler(propertyChanged);
         }
 
         public HashSet<Cell> GetSibilngs() {
             HashSet<Cell> cells = new HashSet<Cell>();
 
-            foreach(ObservableCollection<Cell> col in Grid.GridRows) {
+            foreach(List<Cell> col in Grid.GridRows) {
                 foreach(Cell c in col) {
                     cells.Add(c);
                 }
@@ -135,6 +136,49 @@ namespace Sudoku {
             cells.Remove(this);
 
             return cells;
+        }
+
+        private bool checkIsValid(int? number = null) {
+            if(!number.HasValue) {
+                number = Number;
+            }
+            if(number.HasValue) {
+                foreach(Cell c in GetSibilngs()) {
+                    if(c.Number.HasValue && c.Number == number) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private void updateNotes() {
+            foreach(int i in Notes.ToList()) {
+                if(!checkIsValid(i)) {
+                    Notes.Remove(i);
+                    AutoRemovedNotes.Add(i);
+                }
+            }
+            foreach(int i in AutoRemovedNotes.ToList()) {
+                if(checkIsValid(i)) {
+                    Notes.Add(i);
+                    AutoRemovedNotes.Remove(i);
+                }
+            }
+        }
+
+        void propertyChanged(object sender, PropertyChangedEventArgs e) {
+            Cell cell = (Cell) sender;
+            if(e.PropertyName == Cell.NUMBER_EVENT) {
+                bool validCheck = checkIsValid();
+                cell.IsValid = validCheck;
+                updateNotes();
+                foreach(Cell c in cell.GetSibilngs()) {
+                    c.IsValid = c.checkIsValid();
+                    c.updateNotes();
+                }
+            }
         }
 
         #region INotifyPropertyChanged Members

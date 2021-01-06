@@ -5,9 +5,9 @@ using System.ComponentModel;
 using System.Linq;
 
 namespace Sudoku {
-    public class Board : INotifyPropertyChanged, ICloneable {
-        ObservableCollection<ObservableCollection<Grid>> rows;
-        public ObservableCollection<ObservableCollection<Grid>> BoardRows {
+    public class Board : ICloneable {
+        List<List<Grid>> rows;
+        public List<List<Grid>> BoardRows {
             get {
                 return rows;
             }
@@ -46,43 +46,17 @@ namespace Sudoku {
             rows = createBoard();
         }
 
-        ObservableCollection<ObservableCollection<Grid>> createBoard() {
-            ObservableCollection<ObservableCollection<Grid>> rows = new ObservableCollection<ObservableCollection<Grid>>();
+        List<List<Grid>> createBoard() {
+            List<List<Grid>> rows = new List<List<Grid>>();
             for(int row = 0; row < Size; row++) {
-                ObservableCollection<Grid> col = new ObservableCollection<Grid>();
+                List<Grid> col = new List<Grid>();
                 for(int c = 0; c < Size; c++) {
                     Grid grid = new Grid(this, row, c);
-                    grid.PropertyChanged += new PropertyChangedEventHandler(gridPropertyChanged);
                     col.Add(grid);
                 }
                 rows.Add(col);
             }
             return rows;
-        }
-
-        private bool checkIsValid(Cell cell) {
-            if(cell.Number.HasValue) {
-                foreach(Cell c in cell.GetSibilngs()) {
-                    if(c.Number.HasValue && c.Number == cell.Number) {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        void gridPropertyChanged(object sender, PropertyChangedEventArgs e) {
-            Cell cell = (Cell) sender;
-            if(e.PropertyName == Cell.NUMBER_EVENT) {
-                bool validCheck = checkIsValid(cell);
-                if(cell.IsValid != validCheck) {
-                    cell.IsValid = validCheck;
-                    foreach(Cell c in cell.GetSibilngs()) {
-                        c.IsValid = checkIsValid(c);
-                    }
-                }
-            }
         }
 
         public Cell this[int row, int col] {
@@ -105,11 +79,11 @@ namespace Sudoku {
             Random random = new Random();
             int numberRemoved = 0;
             List<Cell> ineligibleCells = new List<Cell>();
-            while(numberRemoved < 35) {
+            while(numberRemoved < 35 && ineligibleCells.Count < (TotalSize * TotalSize) - numberRemoved) {
                 Cell cell;
                 do {
                     cell = this[random.Next(9), random.Next(9)];
-                } while(!cell.Number.HasValue || ineligibleCells.Contains(cell));
+                } while((!cell.Number.HasValue || ineligibleCells.Contains(cell)));
 
                 int? removedNumber = cell.Number;
                 cell.Number = null;
@@ -137,7 +111,6 @@ namespace Sudoku {
         }
 
         public bool SolveBoard() {
-            int[] possibleValues = Enumerable.Range(1, TotalSize).ToArray();
             Random random = new Random();
             for(int row = 0; row < TotalSize; row++) {
                 for(int col = 0; col < TotalSize; col++) {
@@ -147,7 +120,7 @@ namespace Sudoku {
                         continue;
                     }
 
-                    List<int> remainingValues = possibleValues.OrderBy(x => random.Next()).ToList();
+                    List<int> remainingValues = cell.PossibleValues.OrderBy(x => random.Next()).ToList();
                     foreach(int i in remainingValues) {
                         cell.Number = i;
                         if(cell.IsValid) {
@@ -170,7 +143,6 @@ namespace Sudoku {
                 return;
             }
 
-            int[] possibleValues = Enumerable.Range(1, TotalSize).ToArray();
             Random random = new Random();
             for(int row = 0; row < TotalSize; row++) {
                 for(int col = 0; col < TotalSize; col++) {
@@ -180,7 +152,7 @@ namespace Sudoku {
                         continue;
                     }
 
-                    List<int> remainingValues = possibleValues.OrderBy(x => random.Next()).ToList();
+                    List<int> remainingValues = cell.PossibleValues.OrderBy(x => random.Next()).ToList();
                     foreach(int i in remainingValues) {
                         cell.Number = i;
                         if(cell.IsValid) {
@@ -216,9 +188,5 @@ namespace Sudoku {
         public Board Copy() {
             return (Board) Clone();
         }
-
-        #region INotifyPropertyChanged Members
-        public event PropertyChangedEventHandler PropertyChanged;
-        #endregion
     }
 }

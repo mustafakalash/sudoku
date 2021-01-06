@@ -73,6 +73,7 @@ namespace Sudoku
                         GameBoard.SelectedCell.Notes.Remove(number);
                     } else {
                         GameBoard.SelectedCell.Notes.Add(number);
+                        GameBoard.SelectedCell.AutoRemovedNotes.Remove(number);
                     }
                 } else {
                     GameBoard.SelectedCell.Number = number;

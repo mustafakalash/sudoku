@@ -18,7 +18,7 @@
                 </Button.Resources>
                 <Grid Width="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" Height="{Binding ActualHeight, RelativeSource={RelativeSource TemplatedParent}}" Margin="-2, -2, 0 ,0">
                     <TextBlock x:Name="Text" VerticalAlignment="Center" HorizontalAlignment="Center"  FontWeight="Bold" Foreground="Blue" FontSize="16" Text="{Binding Path=Number}" />
-                    <ItemsControl x:Name="Notes" ItemsSource="{Binding Source={StaticResource SortedNotes}}" ItemTemplate="{StaticResource NoteTemplate}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="1">
+                    <ItemsControl x:Name="Notes" Visibility="Collapsed" ItemsSource="{Binding Source={StaticResource SortedNotes}}" ItemTemplate="{StaticResource NoteTemplate}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="1">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid />
@@ -28,8 +28,8 @@
                 </Grid>
             </Button>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding Path=Number.HasValue}" Value="True">
-                    <Setter TargetName="Notes" Property="Visibility" Value="Hidden" />
+                <DataTrigger Binding="{Binding Path=Number}" Value="{x:Null}">
+                    <Setter TargetName="Notes" Property="Visibility" Value="Visible" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding SiblingSelected}" Value="True">
                     <Setter TargetName="Cell" Property="Background" Value="AliceBlue" />
