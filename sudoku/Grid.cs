@@ -25,6 +25,7 @@ namespace Sudoku {
                 List<Cell> colL = new List<Cell>();
                 for(int c = 0; c < board.Size; c++) {
                     Cell cell = new Cell(this, r, c);
+                    cell.ReadOnly = true;
                     colL.Add(cell);
                 }
                 rows.Add(colL);

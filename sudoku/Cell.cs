@@ -61,8 +61,6 @@ namespace Sudoku {
             }
         }
 
-        public readonly List<int> PossibleValues;
-
         ObservableCollection<int> notesList = new ObservableCollection<int>();
         public ObservableCollection<int> Notes {
             get {
@@ -114,7 +112,6 @@ namespace Sudoku {
             Grid = grid;
             Row = GridRow + (Grid.Row * Grid.Board.Size);
             Col = GridCol + (Grid.Col * Grid.Board.Size);
-            PossibleValues = Enumerable.Range(1, grid.Board.TotalSize).ToList();
 
             PropertyChanged += new PropertyChangedEventHandler(propertyChanged);
         }
@@ -169,12 +166,11 @@ namespace Sudoku {
         }
 
         void propertyChanged(object sender, PropertyChangedEventArgs e) {
-            Cell cell = (Cell) sender;
             if(e.PropertyName == Cell.NUMBER_EVENT) {
                 bool validCheck = checkIsValid();
-                cell.IsValid = validCheck;
+                IsValid = validCheck;
                 updateNotes();
-                foreach(Cell c in cell.GetSibilngs()) {
+                foreach(Cell c in GetSibilngs()) {
                     c.IsValid = c.checkIsValid();
                     c.updateNotes();
                 }
