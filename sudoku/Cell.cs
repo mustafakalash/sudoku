@@ -4,122 +4,118 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Sudoku {
     public class Cell : INotifyPropertyChanged {
-        public const string READ_ONLY_EVENT = "ReadOnly";
-        public const string NUMBER_EVENT = "Number";
-        public const string IS_VALID_EVENT = "IsValid";
-        public const string SELECTED_EVENT = "Selected";
-        public const string SIBLING_SELECTED_EVENT = "SiblingSelected";
+        public event PropertyChangedEventHandler PropertyChanged;
 
-        bool readOnlyValue = false;
+        bool _readOnly = false;
         public bool ReadOnly {
             get {
-                return readOnlyValue;
+                return _readOnly;
             }
             set {
-                if(readOnlyValue != value) {
-                    readOnlyValue = value;
-                    if(PropertyChanged != null) {
-                        PropertyChanged(this, new PropertyChangedEventArgs(READ_ONLY_EVENT));
-                    }
+                if(_readOnly != value) {
+                    _readOnly = value;
+                    NotifyPropertyChanged();
                 }
             }
         }
 
-        int? numberValue = null;
+        int? _number = null;
         public int? Number {
             get {
-                return numberValue;
+                return _number;
             }
             set {
-                if(numberValue != value) {
-                    numberValue = value;
-                    if(PropertyChanged != null) {
-                        PropertyChanged(this, new PropertyChangedEventArgs(NUMBER_EVENT));
-                    }
+                if(_number != value) {
+                    _number = value;
+                    NotifyPropertyChanged();
                 }
             }
         }
 
-        bool isValidValue = true;
-
+        bool _isValid = true;
         public bool IsValid {
             get {
-                return isValidValue;
+                return _isValid;
             }
             set {
-                if(isValidValue != value) {
-                    isValidValue = value;
-                    if(PropertyChanged != null) {
-                        PropertyChanged(this, new PropertyChangedEventArgs(IS_VALID_EVENT));
-                    }
+                if(_isValid != value) {
+                    _isValid = value;
+                    NotifyPropertyChanged();
                 }
             }
         }
 
-        ObservableCollection<int> notesList = new ObservableCollection<int>();
+        readonly ObservableCollection<int> _notes = new ObservableCollection<int>();
         public ObservableCollection<int> Notes {
             get {
-                return notesList;
-            }
-            set {
-                notesList = value;
+                return _notes;
             }
         }
 
-        public List<int> AutoRemovedNotes = new List<int>();
+        public readonly List<int> AutoRemovedNotes = new List<int>();
 
-        bool selectedValue = false;
+        bool _selected = false;
         public bool Selected {
             get {
-                return selectedValue;
+                return _selected;
             }
             set {
-                if(selectedValue != value) {
-                    selectedValue = value;
-                    if(PropertyChanged != null) {
-                        PropertyChanged(this, new PropertyChangedEventArgs(SELECTED_EVENT));
-                    }
+                if(_selected != value) {
+                    _selected = value;
+                    NotifyPropertyChanged();
                 }
             }
         }
 
-        bool siblingSelectedValue = false;
+        bool _siblingSelected = false;
         public bool SiblingSelected {
             get {
-                return siblingSelectedValue;
+                return _siblingSelected;
             }
             set {
-                if(siblingSelectedValue != value) {
-                    siblingSelectedValue = value;
-                    if(PropertyChanged != null) {
-                        PropertyChanged(this, new PropertyChangedEventArgs(SIBLING_SELECTED_EVENT));
-                    }
+                if(_siblingSelected != value) {
+                    _siblingSelected = value;
+                    NotifyPropertyChanged();
                 }
             }
         }
 
         public readonly int Row, Col, GridRow, GridCol;
-        public readonly Grid Grid;
+
+        Grid _grid;
+        public Grid Grid {
+            get {
+                return _grid;
+            }
+            set {
+                _grid = value;
+            }
+        }
 
         public Cell(Grid grid, int row, int col) {
             GridRow = row;
             GridCol = col;
-            Grid = grid;
+            _grid = grid;
             Row = GridRow + (Grid.Row * Grid.Board.Size);
             Col = GridCol + (Grid.Col * Grid.Board.Size);
 
             PropertyChanged += new PropertyChangedEventHandler(propertyChanged);
         }
 
+        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "") {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         public HashSet<Cell> GetSibilngs() {
             HashSet<Cell> cells = new HashSet<Cell>();
 
-            foreach(List<Cell> col in Grid.GridRows) {
+            foreach(ObservableCollection<Cell> col in Grid.GridRows) {
                 foreach(Cell c in col) {
                     cells.Add(c);
                 }
@@ -166,19 +162,15 @@ namespace Sudoku {
         }
 
         void propertyChanged(object sender, PropertyChangedEventArgs e) {
-            if(e.PropertyName == Cell.NUMBER_EVENT) {
+            if(e.PropertyName == nameof(Number)) {
                 bool validCheck = checkIsValid();
                 IsValid = validCheck;
-                updateNotes();
+                if(MainWindow.AutoNotes) updateNotes();
                 foreach(Cell c in GetSibilngs()) {
                     c.IsValid = c.checkIsValid();
-                    c.updateNotes();
+                    if(MainWindow.AutoNotes) c.updateNotes();
                 }
             }
         }
-
-        #region INotifyPropertyChanged Members
-        public event PropertyChangedEventHandler PropertyChanged;
-        #endregion
     }
 }

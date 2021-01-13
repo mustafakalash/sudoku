@@ -1,81 +1,125 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Sudoku {
     public class Board : ICloneable, INotifyPropertyChanged {
-        List<List<Grid>> rows;
-        public List<List<Grid>> BoardRows {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        ObservableCollection<ObservableCollection<Grid>> _boardRows = new ObservableCollection<ObservableCollection<Grid>>();
+        public ObservableCollection<ObservableCollection<Grid>> BoardRows {
             get {
-                return rows;
+                return _boardRows;
+            }
+            set {
+                _boardRows = BoardRows;
             }
         }
 
-        public const string GAME_GENERATED_EVENT = "GameGenerated";
+        int _size;
+        public int Size {
+            get {
+                return _size;
+            }
+        }
 
-        public readonly int Size;
-        public readonly int TotalSize;
-        public readonly List<int> PossibleValues;
+        int _totalSize;
+        public int TotalSize {
+            get {
+                return _totalSize;
+            }
+        }
 
-        bool gameGeneratedValue = false;
+        public List<int> PossibleValues;
+
+        bool _gameGenerated = false;
         public bool GameGenerated {
             get {
-                return gameGeneratedValue;
+                return _gameGenerated;
             }
             set {
-                if(gameGeneratedValue != value) {
-                    gameGeneratedValue = value;
-                    if(PropertyChanged != null) {
-                        PropertyChanged(this, new PropertyChangedEventArgs(GAME_GENERATED_EVENT));
-                    }
+                if(_gameGenerated != value) {
+                    _gameGenerated = value;
+                    NotifyPropertyChanged();
                 }
             }
         }
 
-        Cell selectedCellObject;
-        public Cell SelectedCell {
+        bool _gameLoading = false;
+        public bool GameLoading {
             get {
-                return selectedCellObject;
+                return _gameLoading;
             }
             set {
-                if(selectedCellObject != value) {
-                    if(selectedCellObject != null) {
-                        selectedCellObject.Selected = false;
-                        foreach(Cell c in selectedCellObject.GetSibilngs()) {
+                if(_gameLoading != value) {
+                    _gameLoading = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
+        bool _solving = false;
+        public bool Solving {
+            get {
+                return _solving;
+            }
+            set {
+                if(_solving != value) {
+                    _solving = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
+        Cell _selectedCell;
+        public Cell SelectedCell {
+            get {
+                return _selectedCell;
+            }
+            set {
+                if(_selectedCell != value) {
+                    if(_selectedCell != null) {
+                        _selectedCell.Selected = false;
+                        foreach(Cell c in _selectedCell.GetSibilngs()) {
                             c.SiblingSelected = false;
                         }
                     }
-                    selectedCellObject = value;
-                    if(selectedCellObject != null) {
-                        selectedCellObject.Selected = true;
-                        foreach(Cell c in selectedCellObject.GetSibilngs()) {
+                    _selectedCell = value;
+                    if(_selectedCell != null) {
+                        _selectedCell.Selected = true;
+                        foreach(Cell c in _selectedCell.GetSibilngs()) {
                             c.SiblingSelected = true;
                         }
                     }
+                    NotifyPropertyChanged();
                 }
             }
         }
 
-        public Board(int size) {
-            TotalSize = size;
-            Size = (int) Math.Sqrt(size);
-            PossibleValues = Enumerable.Range(1, TotalSize).ToList();
-            rows = createBoard();
-        }
+        public void GenerateBoard(int size) {
+            GameGenerated = false;
 
-        List<List<Grid>> createBoard() {
-            List<List<Grid>> rows = new List<List<Grid>>();
+            _size = (int) Math.Sqrt(size);
+            _totalSize = Size * Size;
+            PossibleValues = Enumerable.Range(1, TotalSize).ToList();
+
+            BoardRows.Clear();
             for(int row = 0; row < Size; row++) {
-                List<Grid> col = new List<Grid>();
+                ObservableCollection<Grid> col = new ObservableCollection<Grid>();
                 for(int c = 0; c < Size; c++) {
                     Grid grid = new Grid(this, row, c);
                     col.Add(grid);
                 }
-                rows.Add(col);
+                BoardRows.Add(col);
             }
-            return rows;
+        }
+
+        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "") {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         public Cell this[int row, int col] {
@@ -87,28 +131,24 @@ namespace Sudoku {
                     throw new ArgumentOutOfRangeException("col", col, "Invalid column index");
                 }
 
-                Grid grid = rows[row / Size][col / Size];
+                Grid grid = BoardRows[row / Size][col / Size];
                 return grid.GridRows[row % Size][col % Size];
             }
         }
 
         public async Task GenerateGame() {
-            if(GameGenerated) {
-                GameGenerated = false;
-                for(int row = 0; row < TotalSize; row++) {
-                    for(int col = 0; col < TotalSize; col++) {
-                        this[row, col].Number = null;
-                        this[row, col].ReadOnly = true;
-                    }
-                }
+            if(GameLoading) {
+                return;
             }
-            await SolveBoard();
+            GameLoading = true;
+
+            await (new Solver()).Solve(this);
 
             Random random = new Random();
             int numberRemoved = 0;
             List<Cell> ineligibleCells = new List<Cell>();
             int totalCellCount = TotalSize * TotalSize;
-            while(numberRemoved < totalCellCount * .375 && ineligibleCells.Count < totalCellCount - numberRemoved) {
+            while(ineligibleCells.Count < totalCellCount / 2) {
                 Cell cell;
                 do {
                     cell = this[random.Next(TotalSize), random.Next(TotalSize)];
@@ -117,18 +157,15 @@ namespace Sudoku {
                 int? removedNumber = cell.Number;
                 cell.Number = null;
 
-                Board boardCopy = this.Copy();
+                Solver solver = new Solver();
+                await solver.Test(this.Copy());
 
-                Tester.SolutionCount = 0;
-                await Tester.TestBoard(boardCopy);
-
-                if(Tester.SolutionCount != 1) {
-                    Console.Write(String.Format("{0} solutions for cell at {1}, {2}.", Tester.SolutionCount, cell.Row, cell.Col));
+                if(solver.SolutionCount != 1) {
                     cell.Number = removedNumber;
-                    ineligibleCells.Add(cell);
                 } else {
                     numberRemoved++;
                 }
+                ineligibleCells.Add(cell);
             }
 
             for(int row = 0; row < TotalSize; row++) {
@@ -141,6 +178,7 @@ namespace Sudoku {
             }
 
             GameGenerated = true;
+            GameLoading = false;
         }
 
         public bool IsSolved() {
@@ -155,76 +193,9 @@ namespace Sudoku {
             return true;
         }
 
-        public async Task<bool> SolveBoard() {
-            await Task.Delay(200);
-
-            Random random = new Random();
-            for(int row = 0; row < TotalSize; row++) {
-                for(int col = 0; col < TotalSize; col++) {
-                    Cell cell = this[row, col];
-
-                    if(cell.Number.HasValue) {
-                        continue;
-                    }
-
-                    List<int> remainingValues = PossibleValues.OrderBy(x => random.Next()).ToList();
-                    foreach(int i in remainingValues) {
-                        cell.Number = i;
-                        if(cell.IsValid) {
-                            if((row == TotalSize - 1 && col == TotalSize - 1) || await SolveBoard()) {
-                                return true;
-                            }
-                        }
-                    }
-
-                    cell.Number = null;
-                    return false;
-                }
-            }
-
-            return false;
-        }
-
-        class Tester {
-            public static int SolutionCount;
-            public static async Task TestBoard(Board board) {
-                await Task.Delay(200);
-
-                if(SolutionCount >= 2) {
-                    return;
-                }
-
-                Random random = new Random();
-                for(int row = 0; row < board.TotalSize; row++) {
-                    for(int col = 0; col < board.TotalSize; col++) {
-                        Cell cell = board[row, col];
-
-                        if(cell.Number.HasValue) {
-                            continue;
-                        }
-
-                        List<int> remainingValues = board.PossibleValues.OrderBy(x => random.Next()).ToList();
-                        foreach(int i in remainingValues) {
-                            cell.Number = i;
-                            if(cell.IsValid) {
-                                if(board.IsSolved()) {
-                                    SolutionCount++;
-                                    return;
-                                }
-                                Board boardCopy = board.Copy();
-                                await TestBoard(boardCopy);
-                            }
-                        }
-
-                        cell.Number = null;
-                        return;
-                    }
-                }
-            }
-        }
-
         public object Clone() {
-            Board copy = new Board(TotalSize);
+            Board copy = new Board();
+            copy.GenerateBoard(TotalSize);
 
             for(int row = 0; row < TotalSize; row++) {
                 for(int col = 0; col < TotalSize; col++) {
@@ -244,9 +215,5 @@ namespace Sudoku {
         public Board Copy() {
             return (Board) Clone();
         }
-
-        #region INotifyPropertyChanged Members
-        public event PropertyChangedEventHandler PropertyChanged;
-        #endregion
     }
 }

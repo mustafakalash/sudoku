@@ -5,8 +5,54 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Sudoku"
         mc:Ignorable="d"
-        Title="Sudoku" Height="640" Width="640">
+        Title="Sudoku">
     <DockPanel>
-        <local:BoardUI DockPanel.Dock="Left" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="5" />
+        <Grid DockPanel.Dock="Left" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="5">
+            <local:BoardUI />
+            <Border x:Name="LoadInstr" Background="#FFF" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                <Label VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="32">Click "New game" to start.</Label>
+            </Border>
+        </Grid>
+        <StackPanel x:Name="ControlPanel" DockPanel.Dock="Right" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+            <CheckBox Checked="SetAutoNotes" Unchecked="SetAutoNotes" IsChecked="True">Auto remove notes</CheckBox>
+            <Label>Board size</Label>
+            <StackPanel Orientation="Horizontal" Margin="0, 0, 0, 5">
+                <StackPanel.Resources>
+                    <Style TargetType="{x:Type RadioButton}">
+                        <Setter Property="Margin" Value="0, 0, 5, 0"/>
+                    </Style>
+                </StackPanel.Resources>
+                <RadioButton GroupName="BoardSize" Checked="SetSize" Tag="4">4x4</RadioButton>
+                <RadioButton GroupName="BoardSize" Checked="SetSize" Tag="9" IsChecked="True">9x9</RadioButton>
+                <RadioButton GroupName="BoardSize" Checked="SetSize" Tag="16">16x16</RadioButton>
+            </StackPanel>
+            <Button Click="NewGame">
+                New game
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding GameLoading}" Value="True">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Label>Solve speed</Label>
+            <Slider Minimum="1" Maximum="200" Value="100" TickFrequency="10" TickPlacement="BottomRight" IsDirectionReversed="True" ValueChanged="UpdateSolveSpeed" Margin="0, 0, 0, 5" />
+            <Button Click="SolveBoard">
+                Solve
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="IsEnabled" Value="False" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding GameGenerated}" Value="True">
+                                <Setter Property="IsEnabled" Value="True" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
     </DockPanel>
 </Window>

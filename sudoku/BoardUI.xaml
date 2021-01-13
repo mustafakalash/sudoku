@@ -91,10 +91,11 @@
 
         <Style x:Key="BusyAnimationStyle" TargetType="Control">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding Path=GameGenerated}" Value="True">
+                <DataTrigger Binding="{Binding Path=GameLoading}" Value="False">
                     <Setter Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
             </Style.Triggers>
+
             <Setter Property="Background" Value="#1F000000"/>
 
             <Setter Property="Template">
@@ -208,7 +209,6 @@
                                     <Ellipse x:Name="ellipse7" Canvas.Top="34.25" Canvas.Left="7" />
                                     <Ellipse Width="39.5" Height="39.5" Canvas.Left="8.75" Canvas.Top="8" Visibility="Hidden"/>
                                 </Canvas>
-                                <Label Content="{Binding Path=Text}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
                     </ControlTemplate>
@@ -225,6 +225,6 @@
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
         </ItemsControl>
-        <Control Style="{StaticResource BusyAnimationStyle}" />
+        <Control x:Name="Loading" Style="{StaticResource BusyAnimationStyle}" />
     </Grid>
 </UserControl>

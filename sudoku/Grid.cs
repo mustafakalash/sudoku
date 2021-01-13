@@ -1,35 +1,50 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace Sudoku {
-    public class Grid {
-        readonly List<List<Cell>> rows;
-        public List<List<Cell>> GridRows {
+    public class Grid : INotifyPropertyChanged {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        ObservableCollection<ObservableCollection<Cell>> _rows = new ObservableCollection<ObservableCollection<Cell>>();
+        public ObservableCollection<ObservableCollection<Cell>> GridRows {
             get {
-                return rows;
+                return _rows;
+            }
+            set {
+                _rows = value;
             }
         }
 
         public readonly int Row, Col;
 
-        public readonly Board Board;
+        readonly Board _board;
+        public Board Board {
+            get {
+                return _board;
+            }
+        }
 
         public Grid(Board board, int row, int col) {
-            Board = board;
+            _board = board;
             Row = row;
             Col = col;
 
-            rows = new List<List<Cell>>();
             for(int r = 0; r < board.Size; r++) {
-                List<Cell> colL = new List<Cell>();
+                ObservableCollection<Cell> colL = new ObservableCollection<Cell>();
                 for(int c = 0; c < board.Size; c++) {
                     Cell cell = new Cell(this, r, c);
                     cell.ReadOnly = true;
                     colL.Add(cell);
                 }
-                rows.Add(colL);
+                GridRows.Add(colL);
             }
+        }
+
+        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "") {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

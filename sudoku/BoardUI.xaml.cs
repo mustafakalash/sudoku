@@ -50,18 +50,12 @@ namespace Sudoku {
             {Key.Back, null}
         };
 
-        public Board GameBoard;
+        public static readonly Board GameBoard = new Board();
 
         public BoardUI() {
-            Loaded += generateGame;
-            GameBoard = new Board(9);
             InitializeComponent();
             MainList.DataContext = GameBoard;
-        }
-
-        private async void generateGame(object sender, RoutedEventArgs e) {
-            Loaded -= generateGame;
-            await GameBoard.GenerateGame();
+            Loading.DataContext = GameBoard;
         }
 
         public void SelectCell(object sender, RoutedEventArgs e) {
@@ -74,7 +68,7 @@ namespace Sudoku {
         }
 
         public void InputNumber(object sender, KeyEventArgs e) {
-            if(GameBoard.SelectedCell is null || GameBoard.SelectedCell.ReadOnly || !numericKeys.ContainsKey(e.Key)) {
+            if(GameBoard.SelectedCell is null || GameBoard.SelectedCell.ReadOnly || !numericKeys.ContainsKey(e.Key) || GameBoard.Solving) {
                 return;
             }
 
